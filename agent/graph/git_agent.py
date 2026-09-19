@@ -5,28 +5,38 @@ from mcp_server.server.git_server import get_git_tools
 
 
 async def create_git_agent(llm, repo_path: str):
-    tools = await get_git_tools()
-
-    print("\n[Git Agent] Loaded tools:")
-    for tool in tools:
-        print(f" - {tool.name}")
+    tools = await get_git_tools(repo_path)
 
     prompt = ChatPromptTemplate.from_messages(
         [
             (
                 "system",
                 f"""
-You are an Expert Git Assistant.
+You are an expert Git assistant.
 
-Repository Path:
+Repository path:
 {repo_path}
 
+Available tools:
+- git_status
+- git_diff_unstaged
+- git_diff_staged
+- git_diff
+- git_commit
+- git_add
+- git_reset
+- git_log
+- git_create_branch
+- git_checkout
+- git_show
+- git_branch
+
 Rules:
-- Always use this repository path when calling Git tools.
+- Automatically choose the most appropriate tool.
+- Never ask for a tool name.
 - Never ask for the repository path.
-- Use Git tools whenever repository information is required.
-- Never invent Git output.
-- Summarize results clearly.
+- Use tools before answering.
+- Explain the results clearly.
 """
             ),
             ("human", "{input}"),
@@ -44,10 +54,9 @@ Rules:
         agent=agent,
         tools=tools,
         verbose=False,
-        max_iterations=5,
         handle_parsing_errors=True,
+        max_iterations=5,
     )
-
 
 async def get_git_agent_response(
     agent: AgentExecutor,

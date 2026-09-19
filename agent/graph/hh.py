@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 from agent.graph.git_agent import (
     create_git_agent,
@@ -18,13 +19,18 @@ async def main():
         repo_path
     )
 
-    response = await get_git_agent_response(
-        git_agent,
-        "Show me the current git status"
-    )
+    while True:
+        query = input("\nGit> ").strip()
 
-    print(response)
+        if query.lower() in ["exit", "quit"]:
+            break
 
+        response = await get_git_agent_response(
+            git_agent,
+            query
+        )
 
+        print("\n", response)
+        
 if __name__ == "__main__":
     asyncio.run(main())

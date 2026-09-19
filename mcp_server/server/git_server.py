@@ -1,12 +1,12 @@
-import os
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
-async def get_git_tools():
+
+async def get_git_tools(repo_path: str):
     client = MultiServerMCPClient(
         {
             "git": {
                 "command": "mcp-server-git",
-                "args": ["-r", os.getcwd()],
+                "args": ["-r", repo_path],
                 "transport": "stdio",
             }
         }
