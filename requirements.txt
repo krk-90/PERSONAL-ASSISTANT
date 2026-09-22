@@ -5,14 +5,12 @@ pydantic>=2.7.0
 email-validator>=2.0.0
 supabase>=2.0.0
 python-dotenv>=1.0.0
+mem0ai>=0.1.0
+vecs>=0.4.5
+fastembed>=0.3.6
 slowapi>=0.1.9
-
-# MCP (Model Context Protocol) server + client
-# Keep v1.x for compatibility with the current FastMCP implementation.
 mcp>=1.28,<2
 langchain-mcp-adapters>=0.1.0
-
-# LangChain agent framework + Groq LLM provider
 langchain>=0.3.0
 langchain-classic>=1.0.0
 langgraph>=0.2.0

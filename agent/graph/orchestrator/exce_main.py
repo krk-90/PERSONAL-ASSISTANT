@@ -14,6 +14,7 @@ from llm_gateway.provider.groq_llm import get_model
 
 async def main():
 	llm = get_model("openai/gpt-oss-20b")
+	user_id = input("User ID (default-user): ").strip() or "default-user"
 
 	while True:
 		repo_path = input("Repository path (or exit): ").strip()
@@ -21,7 +22,7 @@ async def main():
 		if repo_path.lower() in {"exit", "quit"}:
 			break
 
-		orchestrator = await create_orchestrator(llm, repo_path)
+		orchestrator = await create_orchestrator(llm, repo_path, user_id=user_id)
 
 		while True:
 			query = input("\nAssistant (or exit to switch repository): ").strip()
