@@ -16,9 +16,9 @@ create table if not exists public.tasks (
   constraint tasks_priority_check check (priority in ('low', 'medium', 'high', 'urgent'))
 );
 
-create index if not exists tasks_user_id_created_at_idx on public.tasks (user_id, created_at);
-create index if not exists tasks_user_id_status_idx on public.tasks (user_id, status);
-create index if not exists tasks_user_id_priority_idx on public.tasks (user_id, priority);
+create index if not exists tasks_user_id_idx on public.tasks (user_id);
+create index if not exists tasks_user_status_idx on public.tasks (user_id, status);
+create index if not exists tasks_user_due_date_idx on public.tasks (user_id, due_date);
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -32,7 +32,8 @@ end;
 $$;
 
 drop trigger if exists set_tasks_updated_at on public.tasks;
-create trigger set_tasks_updated_at
+drop trigger if exists tasks_set_updated_at on public.tasks;
+create trigger tasks_set_updated_at
 before update on public.tasks
 for each row
 execute function public.set_updated_at();
