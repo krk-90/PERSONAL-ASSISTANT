@@ -17,8 +17,9 @@ from app.routes.health import router as health_router
 from app.services.chat_services import warm_start_cache
 
 fastapi_app = FastAPI(title="Personal Assistant API")
-STATIC_DIR = Path(__file__).resolve().parent / "static"
-INDEX_FILE = STATIC_DIR / "index.html"
+FRONTEND_DIR = Path(__file__).resolve().parent / "frontend"
+FRONTEND_DIST_DIR = FRONTEND_DIR / "dist"
+INDEX_FILE = FRONTEND_DIST_DIR / "index.html"
 
 
 def _allowed_origins() -> list[str]:
@@ -27,14 +28,15 @@ def _allowed_origins() -> list[str]:
         "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173",
     )
     origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
-    return origins or ["http://localhost:3000"]
+    return origins or ["http://localhost:5173"]
 
 
 allowed_origins = _allowed_origins()
+allow_all_origins = "*" in allowed_origins
 fastapi_app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials="*" not in allowed_origins,
+    allow_origins=["*"] if allow_all_origins else allowed_origins,
+    allow_credentials=not allow_all_origins,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["X-Request-ID", "X-Process-Time"],
@@ -60,8 +62,12 @@ async def request_context_middleware(request: Request, call_next):
     return response
 
 
-if STATIC_DIR.exists():
-    fastapi_app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+if FRONTEND_DIST_DIR.exists():
+    fastapi_app.mount(
+        "/assets",
+        StaticFiles(directory=FRONTEND_DIST_DIR / "assets"),
+        name="frontend-assets",
+    )
 
 
 def custom_openapi():
@@ -98,7 +104,11 @@ async def startup_event() -> None:
 def frontend_index():
     if INDEX_FILE.exists():
         return FileResponse(INDEX_FILE)
-    return {"service": "personal-assistant", "docs": "/docs"}
+    return {
+        "service": "personal-assistant",
+        "message": "Build the React frontend with `npm run build` in app/frontend.",
+        "docs": "/docs",
+    }
 
 
 fastapi_app.include_router(auth_router)
