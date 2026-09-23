@@ -41,7 +41,7 @@ class RAGPipeline:
     def from_path(
         cls,
         llm: BaseChatModel,
-        path: str | Path,
+        path: str | Path | list[str | Path],
         chunk_size: int = 800,
         overlap: int = 120,
     ) -> "RAGPipeline":

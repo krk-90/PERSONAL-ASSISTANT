@@ -7,7 +7,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
-
+from pathlib import Path
 from agent.graph.git_agent import create_git_agent, get_git_agent_response
 from agent.graph.task_agent import create_task_agent, get_task_agent_response
 from agent.memory.agent_memory import LongTermMemory
@@ -182,7 +182,11 @@ async def create_orchestrator(
     router = ROUTER_PROMPT | llm.with_structured_output(RouteDecision)
 
     git_agent = None
-    rag_pipeline = RAGPipeline.from_path(llm, repo_path)
+    rag_sources = [repo_path]
+    upload_dir = Path(repo_path).resolve() / "data" / "uploads" / user_id
+    if upload_dir.exists():
+        rag_sources.append(str(upload_dir))
+    rag_pipeline = RAGPipeline.from_path(llm, rag_sources)
     long_term_memory = memory or LongTermMemory(user_id)
 
     async def load_memory(state: OrchestratorState) -> dict:

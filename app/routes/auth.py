@@ -1,29 +1,14 @@
-import os
-from dotenv import load_dotenv
-
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field
-from supabase import create_client, Client
 
-load_dotenv()
+from app.core.security import (
+    bearer_scheme,
+    get_authenticated_user_id,
+    get_supabase_client,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-bearer_scheme = HTTPBearer(auto_error=False)
-
-
-def get_supabase_client() -> Client:
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_KEY")
-
-    if not url or not key:
-        raise HTTPException(
-            status_code=500,
-            detail="SUPABASE_URL or SUPABASE_KEY is missing."
-        )
-
-    return create_client(url, key)
 
 
 class SignupRequest(BaseModel):
@@ -91,21 +76,12 @@ def get_current_user(
         bearer_scheme
     ),
 ):
-    if not credentials:
-        raise HTTPException(
-            status_code=401,
-            detail="Bearer token required"
-        )
-
-    supabase = get_supabase_client()
+    user_id = get_authenticated_user_id(credentials)
 
     try:
-        response = supabase.auth.get_user(
-            credentials.credentials
-        )
-
+        supabase = get_supabase_client()
+        response = supabase.auth.get_user(credentials.credentials)
         return response.user.model_dump()
-
     except Exception:
         raise HTTPException(
             status_code=401,

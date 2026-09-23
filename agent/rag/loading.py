@@ -40,20 +40,24 @@ def _read_file(path: Path) -> str:
 	return path.read_text(encoding="utf-8", errors="ignore")
 
 
-def load_documents(path: str | Path) -> list[SourceDocument]:
-	root = Path(path).expanduser().resolve()
-	paths = [root] if root.is_file() else sorted(
-		file_path
-		for file_path in root.rglob("*")
-		if not any(directory in IGNORED_DIRECTORIES for directory in file_path.parts)
-	)
-	documents = []
-	for file_path in paths:
-		if not file_path.is_file() or file_path.suffix.lower() not in SUPPORTED_SUFFIXES | {".pdf"}:
+def load_documents(path: str | Path | Iterable[str | Path]) -> list[SourceDocument]:
+	roots = [path] if isinstance(path, (str, Path)) else list(path)
+	documents: list[SourceDocument] = []
+	for item in roots:
+		root = Path(item).expanduser().resolve()
+		if not root.exists():
 			continue
-		text = _read_file(file_path).strip()
-		if text:
-			documents.append(SourceDocument(str(file_path), text))
+		paths = [root] if root.is_file() else sorted(
+			file_path
+			for file_path in root.rglob("*")
+			if not any(directory in IGNORED_DIRECTORIES for directory in file_path.parts)
+		)
+		for file_path in paths:
+			if not file_path.is_file() or file_path.suffix.lower() not in SUPPORTED_SUFFIXES | {".pdf"}:
+				continue
+			text = _read_file(file_path).strip()
+			if text:
+				documents.append(SourceDocument(str(file_path), text))
 	return documents
 
 
