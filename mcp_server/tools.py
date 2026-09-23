@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
@@ -12,10 +14,18 @@ from supabase import Client, create_client
 
 load_dotenv()
 
-mcp = FastMCP("task-manager")
+mcp = FastMCP(
+    "task-manager",
+    host=os.getenv("MCP_HOST", "127.0.0.1"),
+    port=int(os.getenv("MCP_PORT", "8001")),
+)
 
 _TASKS: dict[str, dict[str, Any]] = {}
 _SUPABASE: Client | None = None
+_TASK_USER_CONTEXT: ContextVar[str | None] = ContextVar(
+    "task_user_context",
+    default=None,
+)
 TASKS_TABLE = "tasks"
 VALID_STATUSES = {"pending", "in_progress", "completed", "cancelled"}
 VALID_PRIORITIES = {"low", "medium", "high", "urgent"}
@@ -90,10 +100,19 @@ def _get_supabase() -> Client | None:
     return _SUPABASE
 
 
+@contextmanager
+def task_user_context(user_id: str):
+    token = _TASK_USER_CONTEXT.set(user_id)
+    try:
+        yield
+    finally:
+        _TASK_USER_CONTEXT.reset(token)
+
+
 def _task_user_id() -> str:
-    user_id = os.getenv("TASK_USER_ID")
+    user_id = _TASK_USER_CONTEXT.get() or os.getenv("TASK_USER_ID")
     if not user_id:
-        raise RuntimeError("TASK_USER_ID is required for Supabase task storage.")
+        raise RuntimeError("An authenticated user is required for task storage.")
     return user_id
 
 
@@ -298,7 +317,7 @@ def delete_task(task_id: str) -> bool:
 
 
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(transport=os.getenv("MCP_TRANSPORT", "stdio"))
 
 
 __all__ = [

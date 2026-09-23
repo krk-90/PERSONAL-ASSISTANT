@@ -176,7 +176,6 @@ async def create_orchestrator(
     user_id: str = "default-user",
     memory: LongTermMemory | None = None,
 ):
-    os.environ["TASK_USER_ID"] = user_id
     task_agent = await create_task_agent(llm)
 
     router = ROUTER_PROMPT | llm.with_structured_output(RouteDecision)
@@ -186,7 +185,7 @@ async def create_orchestrator(
     upload_dir = Path(repo_path).resolve() / "data" / "uploads" / user_id
     if upload_dir.exists():
         rag_sources.append(str(upload_dir))
-    rag_pipeline = RAGPipeline.from_path(llm, rag_sources)
+    rag_pipeline = RAGPipeline.from_path(llm, rag_sources, user_id=user_id)
     long_term_memory = memory or LongTermMemory(user_id)
 
     async def load_memory(state: OrchestratorState) -> dict:

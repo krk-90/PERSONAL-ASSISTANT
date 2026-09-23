@@ -58,16 +58,16 @@ class LocalRetriever:
 
 
 class SupabaseRetriever:
-	def __init__(self, chunks: list[DocumentChunk]):
+	def __init__(self, chunks: list[DocumentChunk], user_id: str | None = None):
 		from fastembed import TextEmbedding
 		from supabase import Client, create_client
 
 		url = os.getenv("SUPABASE_URL")
 		key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-		user_id = os.getenv("TASK_USER_ID")
+		user_id = user_id or os.getenv("TASK_USER_ID")
 		if not url or not key or not user_id:
 			raise RuntimeError(
-				"SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and TASK_USER_ID are required."
+				"SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and an authenticated user are required."
 			)
 
 		self.client: Client = create_client(url, key)

@@ -5,6 +5,7 @@ from typing import Any
 
 from agent.graph.orchestrator.orchestrator import create_orchestrator, get_orchestrator_response
 from llm_gateway.provider.groq_llm import get_model
+from mcp_server.tools import task_user_context
 
 _ORCHESTRATOR_CACHE: dict[tuple[str, str, str], Any] = {}
 _ORCHESTRATOR_CACHE_LOCK = asyncio.Lock()
@@ -58,7 +59,8 @@ async def generate_chat_reply(message: str, user_id: str | None = None) -> str:
             repo_path,
             resolved_user_id,
         )
-        return await get_orchestrator_response(orchestrator, message.strip())
+        with task_user_context(resolved_user_id):
+            return await get_orchestrator_response(orchestrator, message.strip())
     except Exception:
         return (
             "I’m temporarily unable to generate a live response right now. "
