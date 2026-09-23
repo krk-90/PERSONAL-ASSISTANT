@@ -1,39 +1,91 @@
 # PERSONAL-ASSISTANT
-An intelligent assistant that helps manage schedules, organize tasks, answer questions, provide reminders, assist with planning, and support decision-making to make daily life more productive and efficient.
 
-## Authentication
+A FastAPI personal-assistant backend with Supabase Auth, task storage, RAG document retrieval, and Groq-powered agent orchestration.
 
-The API uses Supabase Google OAuth and email/password signup:
+## Local setup
 
-1. Set `SUPABASE_URL` and `SUPABASE_KEY` (or `ANON_KEY`) in `.env`.
-2. Add `http://localhost:8000/auth/callback` to Supabase Authentication URL Configuration as an allowed redirect URL.
-3. Start the API with `uvicorn app.main:fastapi_app --reload --reload-dir app`.
-4. Open `http://localhost:8000/auth/login` to sign in with Google.
+1. Create and activate a Python virtual environment.
+2. Install dependencies:
 
-To create an account, send `POST /auth/signup` with JSON containing an email and a password of at least 8 characters:
+```bash
+pip install -r requirements.txt
+```
+
+3. Copy `.env.example` to `.env` and fill in your keys.
+4. Run the Supabase SQL setup files in the Supabase SQL Editor:
+
+```text
+supabase/tasks.sql
+supabase/rag.sql
+```
+
+5. Start the API:
+
+```bash
+uvicorn app.main:fastapi_app --reload --reload-dir app
+```
+
+The API will be available at `http://localhost:8000`.
+
+## API endpoints
+
+- `GET /health` checks whether the service is running.
+- `POST /auth/signup` creates a Supabase email/password account.
+- `POST /auth/login` returns Supabase access and refresh tokens.
+- `GET /auth/me` returns the current user when called with a bearer token.
+- `POST /chat/` sends an authenticated chat message to the assistant.
+- `POST /rag/upload` uploads authenticated user documents for retrieval.
+- `GET /rag/files` lists authenticated user uploads.
+- `DELETE /rag/files/{filename}` deletes one authenticated user upload.
+
+Signup request example:
 
 ```json
 {"email":"you@example.com","password":"your-password"}
 ```
 
-If email confirmation is enabled in Supabase, confirm the email before signing in.
+Login request example:
 
-After the callback, use the returned `access_token` as a bearer token when calling `GET /auth/me`.
-
-## Supabase task storage
-
-Run `supabase/tasks.sql` in the Supabase SQL Editor to create the task table. Add these variables to your local `.env` file:
-
-```text
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```json
+{"email":"you@example.com","password":"your-password"}
 ```
 
-The task tools use `SUPABASE_SERVICE_ROLE_KEY` server-side so row-level security remains enabled. Never expose this key in frontend code or commit it to source control. Without the service-role key, task tools use their local in-memory fallback.
+Use the returned `access_token` as `Authorization: Bearer <token>` for authenticated routes.
 
-## Supabase RAG vector storage
+## Environment variables
 
-Run `supabase/rag.sql` in the Supabase SQL Editor. This enables `pgvector`, creates the `rag_documents` table, and creates the `match_rag_documents` similarity-search function.
+```text
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_DB_URL=postgresql://...
+GROQ_API_KEY=your-groq-key
+TASK_USER_ID=a-valid-supabase-user-uuid
+```
 
-The RAG pipeline automatically indexes repository chunks in Supabase when `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and a valid UUID in `TASK_USER_ID` are available. Otherwise, it uses the local TF-IDF retriever. The first run downloads the FastEmbed model configured by `RAG_EMBEDDING_MODEL` (default: `BAAI/bge-small-en-v1.5`).
+`SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_DB_URL` are server-only secrets. Never expose them in frontend code or commit real values.
+
+`TASK_USER_ID` is used by server-side agent flows and local fallback contexts. Authenticated API routes use the Supabase user id from the bearer token.
+
+## Supabase
+
+The connected deployment project is expected to have:
+
+- `tasks` table with owner-scoped RLS policies.
+- `rag_documents` table with `vector(384)` embeddings and owner-scoped RLS policies.
+- `match_rag_documents` RPC for similarity search.
+- `match_documents` compatibility RPC.
+
+The SQL files in `supabase/` are idempotent and can be re-run safely.
+
+## Deploy on Render
+
+This repo includes `render.yaml`. Create a Render Blueprint from the repository, then set the secret environment variables in the Render dashboard.
+
+The production start command is:
+
+```bash
+uvicorn app.main:fastapi_app --host 0.0.0.0 --port $PORT
+```
+
+The health check path is `/health`.
