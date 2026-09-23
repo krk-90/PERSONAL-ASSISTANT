@@ -7,14 +7,14 @@ create table if not exists public.rag_documents (
   content text not null,
   chunk_id integer not null,
   embedding vector(384) not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint rag_documents_user_id_source_chunk_id_key unique (user_id, source, chunk_id)
 );
 
 create index if not exists rag_documents_user_id_idx on public.rag_documents (user_id);
-create index if not exists rag_documents_user_source_chunk_idx on public.rag_documents (user_id, source, chunk_id);
 create index if not exists rag_documents_embedding_idx
 on public.rag_documents
-using hnsw (embedding vector_cosine_ops);
+using ivfflat (embedding vector_cosine_ops) with (lists = 100);
 
 alter table public.rag_documents enable row level security;
 
