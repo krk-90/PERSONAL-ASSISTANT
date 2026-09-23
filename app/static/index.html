@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Personal Assistant</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17211c;
+      --muted: #60716a;
+      --line: #d9e1dd;
+      --panel: #ffffff;
+      --page: #f5f7f4;
+      --green: #216e57;
+      --green-dark: #174d3d;
+      --blue: #245a9c;
+      --coral: #b74e35;
+      --soft-green: #e7f2ed;
+      --soft-blue: #e8eff8;
+      --shadow: 0 18px 42px rgba(32, 43, 38, 0.10);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfb;
+    }
+
+    .shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 22px 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 6px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    main {
+      padding: 28px 0 36px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header {
+      padding: 18px 18px 0;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 720;
+    }
+
+    .panel-body {
+      padding: 18px;
+    }
+
+    label {
+      display: block;
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      padding: 11px 12px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(33, 110, 87, 0.14);
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: var(--green);
+      color: white;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 720;
+      min-height: 40px;
+      padding: 9px 14px;
+    }
+
+    button:hover { background: var(--green-dark); }
+    button:disabled { cursor: not-allowed; opacity: 0.56; }
+
+    button.secondary {
+      background: #ffffff;
+      color: var(--green);
+      border-color: var(--line);
+    }
+
+    button.secondary:hover { background: var(--soft-green); }
+
+    button.danger {
+      background: #ffffff;
+      color: var(--coral);
+      border-color: #efc8bd;
+    }
+
+    button.danger:hover { background: #fff0ec; }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      background: #ffffff;
+      color: var(--muted);
+      border-color: var(--line);
+    }
+
+    .tab.active {
+      background: var(--soft-blue);
+      color: var(--blue);
+      border-color: #bfd0e8;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .workspace {
+      display: grid;
+      gap: 20px;
+    }
+
+    .chat-log {
+      display: grid;
+      gap: 12px;
+      min-height: 290px;
+      max-height: 480px;
+      overflow: auto;
+      padding: 18px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfb;
+    }
+
+    .message {
+      max-width: 78%;
+      padding: 11px 13px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: white;
+      white-space: pre-wrap;
+    }
+
+    .message.user {
+      justify-self: end;
+      background: var(--soft-green);
+      border-color: #c6ded3;
+    }
+
+    .message.assistant {
+      justify-self: start;
+      background: var(--soft-blue);
+      border-color: #c9d9ee;
+    }
+
+    .composer {
+      padding: 18px;
+    }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .file-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .file-row:last-child { border-bottom: 0; }
+
+    .notice {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #fff8e8;
+      border: 1px solid #f0dda8;
+      color: #765314;
+      font-size: 13px;
+    }
+
+    .ok { color: var(--green); }
+    .error { color: var(--coral); }
+
+    @media (max-width: 900px) {
+      .layout, .grid-two { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .message { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell topbar">
+      <div>
+        <h1>Personal Assistant</h1>
+        <p class="subtitle">Sign in, chat with the agent, and manage retrieval files from one place.</p>
+      </div>
+      <div id="healthStatus" class="status-pill">Checking API health...</div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <div class="layout">
+      <aside class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Session</h2>
+        </div>
+        <div class="panel-body">
+          <div class="field">
+            <label for="apiBase">API base URL</label>
+            <input id="apiBase" type="url" autocomplete="off">
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Authentication mode">
+            <button id="loginTab" class="tab active" type="button">Login</button>
+            <button id="signupTab" class="tab" type="button">Signup</button>
+          </div>
+
+          <form id="authForm">
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" type="email" autocomplete="email" required>
+            </div>
+            <div class="field">
+              <label for="password">Password</label>
+              <input id="password" type="password" autocomplete="current-password" minlength="8" required>
+            </div>
+            <div class="actions">
+              <button id="authSubmit" type="submit">Login</button>
+              <button id="logoutButton" class="secondary" type="button">Logout</button>
+            </div>
+          </form>
+
+          <p id="sessionState" class="notice">No active session.</p>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <article class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Chat</h2>
+            <p class="muted">Messages are sent to `POST /chat/` with your bearer token.</p>
+          </div>
+          <div id="chatLog" class="chat-log" aria-live="polite"></div>
+          <form id="chatForm" class="composer">
+            <div class="field">
+              <label for="chatInput">Message</label>
+              <textarea id="chatInput" placeholder="Ask the assistant something..." required></textarea>
+            </div>
+            <div class="actions">
+              <button id="sendButton" type="submit">Send</button>
+              <button id="clearChat" class="secondary" type="button">Clear</button>
+            </div>
+          </form>
+        </article>
+
+        <div class="grid-two">
+          <article class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">RAG Uploads</h2>
+            </div>
+            <div class="panel-body">
+              <form id="uploadForm">
+                <div class="field">
+                  <label for="files">Documents</label>
+                  <input id="files" type="file" multiple>
+                </div>
+                <div class="actions">
+                  <button id="uploadButton" type="submit">Upload</button>
+                  <button id="refreshFiles" class="secondary" type="button">Refresh</button>
+                </div>
+              </form>
+              <p id="uploadState" class="muted">No upload in progress.</p>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Files</h2>
+            </div>
+            <div class="panel-body">
+              <div id="fileList" class="muted">Login and refresh to see uploaded files.</div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const state = {
+      mode: "login",
+      token: localStorage.getItem("pa_access_token") || "",
+      apiBase: localStorage.getItem("pa_api_base") || window.location.origin,
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const apiBaseInput = $("apiBase");
+    const healthStatus = $("healthStatus");
+    const sessionState = $("sessionState");
+    const authSubmit = $("authSubmit");
+    const loginTab = $("loginTab");
+    const signupTab = $("signupTab");
+    const chatLog = $("chatLog");
+    const fileList = $("fileList");
+    const uploadState = $("uploadState");
+
+    apiBaseInput.value = state.apiBase;
+
+    function endpoint(path) {
+      return `${state.apiBase.replace(/\/$/, "")}${path}`;
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      loginTab.classList.toggle("active", mode === "login");
+      signupTab.classList.toggle("active", mode === "signup");
+      authSubmit.textContent = mode === "login" ? "Login" : "Signup";
+    }
+
+    function setSessionMessage(message, isError = false) {
+      sessionState.textContent = message;
+      sessionState.classList.toggle("error", isError);
+      sessionState.classList.toggle("ok", !isError && Boolean(state.token));
+    }
+
+    function updateSession() {
+      if (state.token) {
+        setSessionMessage("Session token saved. Authenticated routes are ready.");
+      } else {
+        setSessionMessage("No active session.");
+      }
+    }
+
+    async function request(path, options = {}) {
+      const headers = new Headers(options.headers || {});
+      if (state.token) headers.set("Authorization", `Bearer ${state.token}`);
+      if (options.body && !(options.body instanceof FormData)) {
+        headers.set("Content-Type", "application/json");
+      }
+      const response = await fetch(endpoint(path), { ...options, headers });
+      const text = await response.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+      if (!response.ok) {
+        const detail = data && data.detail ? data.detail : response.statusText;
+        throw new Error(Array.isArray(detail) ? JSON.stringify(detail) : detail);
+      }
+      return data;
+    }
+
+    async function checkHealth() {
+      try {
+        const data = await request("/health");
+        healthStatus.textContent = `${data.service || "API"}: ${data.status || "ok"}`;
+        healthStatus.classList.add("ok");
+      } catch (error) {
+        healthStatus.textContent = `API unavailable: ${error.message}`;
+        healthStatus.classList.add("error");
+      }
+    }
+
+    function addMessage(role, text) {
+      const node = document.createElement("div");
+      node.className = `message ${role}`;
+      node.textContent = text;
+      chatLog.appendChild(node);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    async function loadFiles() {
+      if (!state.token) {
+        fileList.textContent = "Login and refresh to see uploaded files.";
+        return;
+      }
+      try {
+        const data = await request("/rag/files");
+        fileList.innerHTML = "";
+        const files = data.files || [];
+        if (!files.length) {
+          fileList.textContent = "No files uploaded yet.";
+          return;
+        }
+        for (const file of files) {
+          const row = document.createElement("div");
+          row.className = "file-row";
+          const name = document.createElement("span");
+          name.textContent = file.filename;
+          const button = document.createElement("button");
+          button.className = "danger";
+          button.type = "button";
+          button.textContent = "Delete";
+          button.addEventListener("click", async () => {
+            await request(`/rag/files/${encodeURIComponent(file.filename)}`, { method: "DELETE" });
+            await loadFiles();
+          });
+          row.append(name, button);
+          fileList.appendChild(row);
+        }
+      } catch (error) {
+        fileList.textContent = `Could not load files: ${error.message}`;
+      }
+    }
+
+    apiBaseInput.addEventListener("change", () => {
+      state.apiBase = apiBaseInput.value.trim() || window.location.origin;
+      localStorage.setItem("pa_api_base", state.apiBase);
+      checkHealth();
+    });
+
+    loginTab.addEventListener("click", () => setMode("login"));
+    signupTab.addEventListener("click", () => setMode("signup"));
+
+    $("authForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      authSubmit.disabled = true;
+      const payload = {
+        email: $("email").value.trim(),
+        password: $("password").value,
+      };
+      try {
+        const data = await request(state.mode === "login" ? "/auth/login" : "/auth/signup", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        if (data.access_token) {
+          state.token = data.access_token;
+          localStorage.setItem("pa_access_token", state.token);
+          updateSession();
+          await loadFiles();
+        } else {
+          setSessionMessage("Signup created. Confirm email if required, then login.");
+          setMode("login");
+        }
+      } catch (error) {
+        setSessionMessage(error.message, true);
+      } finally {
+        authSubmit.disabled = false;
+      }
+    });
+
+    $("logoutButton").addEventListener("click", () => {
+      state.token = "";
+      localStorage.removeItem("pa_access_token");
+      updateSession();
+      fileList.textContent = "Login and refresh to see uploaded files.";
+    });
+
+    $("chatForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const input = $("chatInput");
+      const message = input.value.trim();
+      if (!message) return;
+      addMessage("user", message);
+      input.value = "";
+      $("sendButton").disabled = true;
+      try {
+        const data = await request("/chat/", {
+          method: "POST",
+          body: JSON.stringify({ message }),
+        });
+        addMessage("assistant", data.reply || "No reply returned.");
+      } catch (error) {
+        addMessage("assistant", `Request failed: ${error.message}`);
+      } finally {
+        $("sendButton").disabled = false;
+      }
+    });
+
+    $("clearChat").addEventListener("click", () => {
+      chatLog.innerHTML = "";
+    });
+
+    $("uploadForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const files = $("files").files;
+      if (!files.length) {
+        uploadState.textContent = "Choose at least one file.";
+        return;
+      }
+      const formData = new FormData();
+      for (const file of files) formData.append("files", file);
+      $("uploadButton").disabled = true;
+      uploadState.textContent = "Uploading...";
+      try {
+        const data = await request("/rag/upload", { method: "POST", body: formData });
+        uploadState.textContent = data.message || "Upload complete.";
+        $("files").value = "";
+        await loadFiles();
+      } catch (error) {
+        uploadState.textContent = `Upload failed: ${error.message}`;
+      } finally {
+        $("uploadButton").disabled = false;
+      }
+    });
+
+    $("refreshFiles").addEventListener("click", loadFiles);
+
+    updateSession();
+    checkHealth();
+    loadFiles();
+  </script>
+</body>
+</html>
