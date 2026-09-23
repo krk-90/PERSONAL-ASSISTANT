@@ -2,6 +2,8 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from agent.rag.loading import DocumentChunk
+from agent.rag.retriever.retrieval import LocalRetriever
 from app.main import fastapi_app
 from app.routes.RAG import save_uploaded_documents
 
@@ -48,3 +50,13 @@ def test_list_and_delete_uploaded_documents(tmp_path):
 
     file_path.unlink()
     assert not file_path.exists()
+
+
+def test_local_retriever_matches_uploaded_filename():
+    retriever = LocalRetriever(
+        [DocumentChunk("Artificial intelligence projects", "resume.pdf", 0)]
+    )
+
+    results = retriever.search("check resume")
+
+    assert len(results) == 1

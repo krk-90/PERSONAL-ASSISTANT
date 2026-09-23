@@ -27,7 +27,10 @@ class RetrievedChunk:
 class LocalRetriever:
 	def __init__(self, chunks: list[DocumentChunk]):
 		self.chunks = chunks
-		self._term_counts = [Counter(_tokens(chunk.text)) for chunk in chunks]
+		self._term_counts = [
+			Counter(_tokens(f"{chunk.source} {chunk.text}"))
+			for chunk in chunks
+		]
 		document_frequency = Counter(
 			token for counts in self._term_counts for token in counts
 		)
@@ -77,6 +80,9 @@ class SupabaseRetriever:
 	def _embedding(self, text: str) -> list[float]:
 		return list(next(iter(self.embedder.embed([text]))))
 
+	def _chunk_embedding(self, chunk: DocumentChunk) -> list[float]:
+		return self._embedding(f"{chunk.source}\n{chunk.text}")
+
 	def _row_id(self, chunk: DocumentChunk) -> str:
 		value = f"{self.user_id}:{chunk.source}:{chunk.chunk_id}"
 		return sha256(value.encode("utf-8")).hexdigest()
@@ -91,7 +97,7 @@ class SupabaseRetriever:
 				"source": chunk.source,
 				"content": chunk.text,
 				"chunk_id": chunk.chunk_id,
-				"embedding": self._embedding(chunk.text),
+				"embedding": self._chunk_embedding(chunk),
 			}
 			for chunk in chunks
 		]

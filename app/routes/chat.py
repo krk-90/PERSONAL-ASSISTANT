@@ -17,14 +17,14 @@ class ChatResponse(BaseModel):
 
 
 @router.post("/", response_model=ChatResponse)
-def chat_with_assistant(
+async def chat_with_assistant(
     payload: ChatRequest,
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ):
     user_id = get_authenticated_user_id(credentials)
 
     try:
-        reply = generate_chat_reply(payload.message, user_id=user_id)
+        reply = await generate_chat_reply(payload.message, user_id=user_id)
         return ChatResponse(reply=reply)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

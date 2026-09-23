@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 from langchain_groq import ChatGroq
 from pathlib import Path
 from langchain_core.messages import AIMessage,SystemMessage,HumanMessage
@@ -17,6 +18,7 @@ models = config["llm_provider"]["models"]
 #select other models for different capabilities model = models[0],model = models[1],model = models[2],model = models[3],model = models[4]
 model = models[3]
 
+@lru_cache(maxsize=8)
 def get_model(model_name: str) -> ChatGroq:
     llm = ChatGroq(
         model=model_name,

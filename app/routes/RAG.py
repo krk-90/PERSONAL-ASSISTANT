@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from app.core.security import bearer_scheme, get_authenticated_user_id
+from app.services.chat_services import invalidate_orchestrator_cache
 
 router = APIRouter(prefix="/rag", tags=["rag"])
 
@@ -30,7 +31,9 @@ def save_uploaded_documents(files, user_id: str, base_dir: str | Path | None = N
 
 @router.post("/upload")
 async def upload_documents(
-    files: list[UploadFile] = File(...),
+    files: list[UploadFile] = File(
+        ..., description="Files to upload for RAG indexing"
+    ),
     credentials=Depends(bearer_scheme),
 ):
     user_id = get_authenticated_user_id(credentials)
@@ -71,10 +74,27 @@ async def upload_documents(
             detail="No valid files uploaded",
         )
 
+    invalidate_orchestrator_cache(user_id)
+
     return {
         "message": "Files uploaded successfully",
         "files": saved,
     }
+
+
+@router.get("/files")
+async def list_uploaded_documents(credentials=Depends(bearer_scheme)):
+    user_id = get_authenticated_user_id(credentials)
+    upload_dir = get_user_upload_dir(user_id)
+
+    files = [
+        {"filename": path.name, "path": str(path)}
+        for path in sorted(upload_dir.iterdir())
+        if path.is_file()
+    ]
+
+    return {"files": files}
+
 
 @router.delete("/files/{filename}")
 async def delete_uploaded_document(filename: str, credentials=Depends(bearer_scheme)):
