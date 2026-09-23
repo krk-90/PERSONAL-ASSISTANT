@@ -27,9 +27,19 @@ uvicorn app.main:fastapi_app --reload --reload-dir app
 
 Open `http://localhost:8000` for the frontend. API docs are available at `http://localhost:8000/docs`.
 
+For frontend development, install the React dependencies and start Vite in a second terminal:
+
+```bash
+cd app/frontend
+npm install
+npm run dev
+```
+
+Create a production frontend bundle with `npm run build`; FastAPI serves the generated `dist` directory at `/`.
+
 ## Frontend
 
-The app serves `app/static/index.html` at `/`. The frontend supports:
+The app serves the React build in `app/frontend/dist` at `/`. The frontend supports:
 
 - API health check.
 - Email/password signup and login.
@@ -46,7 +56,7 @@ The app serves `app/static/index.html` at `/`. The frontend supports:
 - Request ID response header: `X-Request-ID`.
 - Request duration response header: `X-Process-Time`.
 - Security headers for content sniffing, frames, referrers, camera, microphone, and geolocation.
-- Static file serving for `/static` and the root frontend route `/`.
+- Static asset serving for `/assets` and the root frontend route `/`.
 
 ## API endpoints
 
@@ -82,13 +92,13 @@ SUPABASE_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SUPABASE_DB_URL=postgresql://...
 GROQ_API_KEY=your-groq-key
-TASK_USER_ID=a-valid-supabase-user-uuid
+TASK_USER_ID=optional-server-fallback-user-uuid
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_DB_URL` are server-only secrets. Never expose them in frontend code or commit real values.
 
-`TASK_USER_ID` is used by server-side agent flows and local fallback contexts. Authenticated API routes use the Supabase user id from the bearer token.
+`TASK_USER_ID` is optional and only used by standalone server-side scripts. Authenticated chat, task, and RAG flows use the Supabase user id from the bearer token automatically, so it does not need to be configured in Render.
 
 ## Supabase
 
@@ -118,3 +128,14 @@ uvicorn app.main:fastapi_app --host 0.0.0.0 --port $PORT
 ```
 
 The health check path is `/health`.
+
+## Docker
+
+The repository includes a single multi-stage image that builds the React frontend and runs FastAPI plus the task MCP server under Supervisor:
+
+```bash
+docker build -t personal-assistant .
+docker run --rm -p 8000:8000 -p 8001:8001 --env-file .env personal-assistant
+```
+
+Open `http://localhost:8000`. The MCP Streamable HTTP endpoint is available inside the container at `http://localhost:8001/mcp` and locally on port `8001` when using the command above. Set `MCP_TRANSPORT=streamable-http`, `MCP_HOST=0.0.0.0`, and `MCP_PORT=8001` when running the MCP server outside the image.
