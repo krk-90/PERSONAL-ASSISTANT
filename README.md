@@ -1,6 +1,6 @@
 # PERSONAL-ASSISTANT
 
-A FastAPI personal-assistant backend with Supabase Auth, task storage, RAG document retrieval, and Groq-powered agent orchestration.
+A FastAPI personal-assistant app with a built-in browser frontend, Supabase Auth, task storage, RAG document retrieval, and Groq-powered agent orchestration.
 
 ## Local setup
 
@@ -19,16 +19,38 @@ supabase/tasks.sql
 supabase/rag.sql
 ```
 
-5. Start the API:
+5. Start the app:
 
 ```bash
 uvicorn app.main:fastapi_app --reload --reload-dir app
 ```
 
-The API will be available at `http://localhost:8000`.
+Open `http://localhost:8000` for the frontend. API docs are available at `http://localhost:8000/docs`.
+
+## Frontend
+
+The app serves `app/static/index.html` at `/`. The frontend supports:
+
+- API health check.
+- Email/password signup and login.
+- Bearer-token session persistence in browser local storage.
+- Authenticated chat requests to `POST /chat/`.
+- RAG document upload, list, and delete controls.
+- Configurable API base URL for local or deployed backends.
+
+## Middleware and CORS
+
+`app/main.py` includes:
+
+- CORS middleware controlled by `CORS_ALLOWED_ORIGINS`.
+- Request ID response header: `X-Request-ID`.
+- Request duration response header: `X-Process-Time`.
+- Security headers for content sniffing, frames, referrers, camera, microphone, and geolocation.
+- Static file serving for `/static` and the root frontend route `/`.
 
 ## API endpoints
 
+- `GET /` opens the frontend.
 - `GET /health` checks whether the service is running.
 - `POST /auth/signup` creates a Supabase email/password account.
 - `POST /auth/login` returns Supabase access and refresh tokens.
@@ -61,6 +83,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SUPABASE_DB_URL=postgresql://...
 GROQ_API_KEY=your-groq-key
 TASK_USER_ID=a-valid-supabase-user-uuid
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_DB_URL` are server-only secrets. Never expose them in frontend code or commit real values.
@@ -81,6 +104,12 @@ The SQL files in `supabase/` are idempotent and can be re-run safely.
 ## Deploy on Render
 
 This repo includes `render.yaml`. Create a Render Blueprint from the repository, then set the secret environment variables in the Render dashboard.
+
+For `CORS_ALLOWED_ORIGINS`, use your deployed service origin. Example:
+
+```text
+https://your-service.onrender.com
+```
 
 The production start command is:
 
