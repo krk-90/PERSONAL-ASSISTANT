@@ -67,11 +67,14 @@ class LongTermMemory:
 			return []
 
 		try:
-			result = await asyncio.to_thread(
-				self._get_memory().search,
-				query,
-				user_id=self.user_id,
-				top_k=limit,
+			result = await asyncio.wait_for(
+				asyncio.to_thread(
+					self._get_memory().search,
+					query,
+					user_id=self.user_id,
+					top_k=limit,
+				),
+				timeout=float(os.getenv("MEM0_SEARCH_TIMEOUT", "2")),
 			)
 			return [item["memory"] for item in result.get("results", [])]
 		except Exception:

@@ -61,7 +61,12 @@ class LocalRetriever:
 
 
 class SupabaseRetriever:
-	def __init__(self, chunks: list[DocumentChunk], user_id: str | None = None):
+	def __init__(
+		self,
+		chunks: list[DocumentChunk],
+		user_id: str | None = None,
+		index_chunks: bool = True,
+	):
 		from fastembed import TextEmbedding
 		from supabase import Client, create_client
 
@@ -78,7 +83,8 @@ class SupabaseRetriever:
 		self.embedder = TextEmbedding(
 			model_name=os.getenv("RAG_EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
 		)
-		self.index(chunks)
+		if index_chunks:
+			self.index(chunks)
 
 	def _embedding(self, text: str) -> list[float]:
 		return [float(x) for x in next(iter(self.embedder.embed([text])))]

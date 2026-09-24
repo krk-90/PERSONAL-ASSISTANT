@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import Literal
 import re
@@ -279,9 +280,11 @@ async def create_orchestrator(
 
     @traceable(name="orchestrator.save_memory")
     async def save_memory(state: OrchestratorState) -> dict:
-        await long_term_memory.add(
-            state["query"],
-            state["response"],
+        asyncio.create_task(
+            long_term_memory.add(
+                state["query"],
+                state["response"],
+            )
         )
         return {}
 

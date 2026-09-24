@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from pathlib import Path
@@ -48,7 +49,11 @@ class RAGPipeline:
         ) and bool(resolved_user_id)
         if use_supabase and configured:
             try:
-                return SupabaseRetriever(chunks, user_id=resolved_user_id)
+                return SupabaseRetriever(
+                    chunks,
+                    user_id=resolved_user_id,
+                    index_chunks=False,
+                )
             except Exception:
                 logger.exception("SupabaseRetriever failed; falling back to in-memory LocalRetriever")
         elif use_supabase:
@@ -73,7 +78,11 @@ class RAGPipeline:
 
     @traceable(name="rag.pipeline.ask")
     async def ask(self, question: str, limit: int = 4) -> str:
-        results = self.retrieve(question, limit=limit)
+        results = await asyncio.to_thread(
+            self.retrieve,
+            question,
+            limit,
+        )
         return await generate_answer(
             self.llm,
             question,
