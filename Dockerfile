@@ -8,12 +8,21 @@ RUN npm run build
 
 FROM python:3.11-slim
 
+ARG RAG_EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+ARG MEM0_EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=8000 \
     MCP_HOST=0.0.0.0 \
     MCP_PORT=8001 \
-    MCP_TRANSPORT=streamable-http
+    MCP_TRANSPORT=streamable-http \
+    RAG_EMBEDDING_MODEL=${RAG_EMBEDDING_MODEL} \
+    MEM0_EMBEDDING_MODEL=${MEM0_EMBEDDING_MODEL} \
+    FASTEMBED_CACHE_PATH=/opt/fastembed_cache \
+    RAG_INDEX_REPO=false \
+    MEM0_HISTORY_DB_PATH=/app/data/mem0-history.db \
+    TOKENIZERS_PARALLELISM=false
 
 WORKDIR /app
 
@@ -24,6 +33,8 @@ RUN apt-get update \
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN python -c "import os; from fastembed import TextEmbedding; [TextEmbedding(model_name=m) for m in {os.environ['RAG_EMBEDDING_MODEL'], os.environ['MEM0_EMBEDDING_MODEL']}]"
+
 COPY app ./app
 COPY agent ./agent
 COPY llm_gateway ./llm_gateway
@@ -33,8 +44,16 @@ COPY --from=frontend-build /build/app/frontend/dist ./app/frontend/dist
 COPY docker/supervisord.conf /etc/supervisor/conf.d/personal-assistant.conf
 COPY docker/entrypoint.sh /entrypoint.sh
 
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh \
+    && useradd --create-home --uid 10001 appuser \
+    && mkdir -p /app/data/uploads \
+    && chown -R appuser:appuser /app/data /opt/fastembed_cache
+
+USER appuser
 
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.environ.get(\"PORT\", \"8000\")}/health', timeout=4)" || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
