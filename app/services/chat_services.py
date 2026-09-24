@@ -1,5 +1,6 @@
 import os
 import asyncio
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,7 @@ from langsmith import traceable
 
 _ORCHESTRATOR_CACHE: dict[tuple[str, str, str], Any] = {}
 _ORCHESTRATOR_CACHE_LOCK = asyncio.Lock()
+logger = logging.getLogger(__name__)
 
 
 def invalidate_orchestrator_cache(user_id: str) -> None:
@@ -68,6 +70,7 @@ async def generate_chat_reply(message: str, user_id: str | None = None) -> str:
                 user_id=resolved_user_id,
             )
     except Exception:
+        logger.exception("Chat generation failed for user %s", resolved_user_id)
         return (
             "I’m temporarily unable to generate a live response right now. "
             "Please try again in a moment."

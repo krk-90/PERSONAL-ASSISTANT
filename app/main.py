@@ -1,4 +1,3 @@
-import asyncio
 import os
 import time
 import uuid
@@ -19,14 +18,12 @@ from app.routes.RAG import router as rag_router
 from app.routes.auth import router as auth_router
 from app.routes.chat import router as chat_router
 from app.routes.health import router as health_router
-from app.services.chat_services import warm_start_cache
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["15/minute"])
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    asyncio.create_task(warm_start_cache())
     yield
 
 
