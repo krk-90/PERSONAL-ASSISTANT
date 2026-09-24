@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 import traceback
 
@@ -10,7 +11,12 @@ from app.core.security import bearer_scheme, get_authenticated_user_id
 from app.services import persistence
 from app.services.chat_services import generate_chat_reply
 
-router = APIRouter(prefix="/chat", tags=["chat"])
+logger = logging.getLogger(__name__)
+
+router = APIRouter(
+    prefix="/chat",
+    tags=["chat"],
+)
 
 
 class ChatRequest(BaseModel):
@@ -57,10 +63,10 @@ async def chat_with_assistant(
         )
 
     try:
-        print("=" * 60)
-        print("CHAT REQUEST")
-        print(f"user_id={user_id}")
-        print(f"message={text}")
+        logger.info("=" * 60)
+        logger.info("CHAT REQUEST")
+        logger.info("USER ID: %s", user_id)
+        logger.info("MESSAGE: %s", text)
 
         start_time = time.time()
 
@@ -74,12 +80,15 @@ async def chat_with_assistant(
 
         elapsed = time.time() - start_time
 
-        print(f"CHAT SUCCESS ({elapsed:.2f}s)")
-        print("=" * 60)
+        logger.info(
+            "CHAT SUCCESS in %.2f seconds",
+            elapsed,
+        )
+        logger.info("=" * 60)
 
     except asyncio.TimeoutError:
-        print("CHAT TIMEOUT")
-        print("=" * 60)
+        logger.error("CHAT TIMEOUT")
+        logger.error("=" * 60)
 
         raise HTTPException(
             status_code=504,
@@ -87,9 +96,8 @@ async def chat_with_assistant(
         )
 
     except ValueError as exc:
-        print("VALUE ERROR")
-        print(str(exc))
-        print("=" * 60)
+        logger.error("VALUE ERROR: %s", str(exc))
+        logger.error("=" * 60)
 
         raise HTTPException(
             status_code=400,
@@ -97,10 +105,10 @@ async def chat_with_assistant(
         ) from exc
 
     except Exception as exc:
-        print("=" * 60)
-        print("UNEXPECTED CHAT ERROR")
-        print(traceback.format_exc())
-        print("=" * 60)
+        logger.error("=" * 60)
+        logger.error("UNEXPECTED CHAT ERROR")
+        logger.error(traceback.format_exc())
+        logger.error("=" * 60)
 
         raise HTTPException(
             status_code=500,
