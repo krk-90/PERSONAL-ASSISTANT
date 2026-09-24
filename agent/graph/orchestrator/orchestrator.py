@@ -2,6 +2,7 @@ import asyncio
 import os
 from typing import Literal
 import re
+import time
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
@@ -9,7 +10,7 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 from pathlib import Path
-from agent.graph.git_agent import create_git_agent, get_git_agent_response
+from agent.graph.git_router import run_git_query
 from agent.graph.task_agent import create_task_agent, get_task_agent_response
 from agent.memory.agent_memory import LongTermMemory
 from agent.rag.pipeline import RAGPipeline
@@ -139,6 +140,9 @@ def deterministic_route(query: str) -> str | None:
 
     q = query.lower().strip()
 
+    if "github.com/" in q:
+        return "git"
+
     if TASK_ID_PATTERN.search(q):
         if any(
             word in q
@@ -228,26 +232,42 @@ async def create_orchestrator(
 
         return {"route": decision.agent}
 
+
     @traceable(name="orchestrator.run_git_agent")
     async def run_git_agent(state: OrchestratorState) -> dict:
-        nonlocal git_agent
 
         try:
-            if git_agent is None:
-                git_agent = await create_git_agent(
-                    llm,
-                    repo_path,
-                )
+            start = time.perf_counter()
 
             query = (
                 state.get("memory_context", "")
                 + state["query"]
             )
 
-            response = await get_git_agent_response(
-                git_agent,
+            print(f"[GIT] Query: {query}")
+
+            github_match = re.search(
+                r"https://github\.com/[^\s]+",
                 query,
+            )
+
+            repo = (
+                github_match.group(0)
+                if github_match
+                else repo_path
+            )
+
+            print(f"[GIT] Repo: {repo}")
+
+            response = await run_git_query(
+                llm=llm,
+                repo=repo,
+                query=query,
                 user_id=user_id,
+            )
+
+            print(
+                f"[GIT] Total: {time.perf_counter()-start:.2f}s"
             )
 
         except Exception as error:
@@ -327,6 +347,9 @@ async def get_orchestrator_response(
     query: str,
     user_id: str | None = None,
 ) -> str:
+
+    print("ORCHESTRATOR START")
+
     result = await orchestrator.ainvoke(
         {"query": query},
         config=trace_config(
@@ -335,6 +358,10 @@ async def get_orchestrator_response(
             tags=["orchestrator", "graph"],
         ),
     )
+
+    print("ORCHESTRATOR FINISHED")
+    print("RESULT TYPE:", type(result))
+    print("RESULT:", result)
 
     return result.get(
         "response",

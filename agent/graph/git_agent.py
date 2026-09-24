@@ -1,6 +1,7 @@
 from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langsmith import traceable
+import traceback
 
 from app.core.tracing import trace_config
 from mcp_server.server.git_server import get_git_tools
@@ -8,6 +9,10 @@ from mcp_server.server.git_server import get_git_tools
 
 async def create_git_agent(llm, repo_path: str):
     tools = await get_git_tools(repo_path)
+
+    print("TOOLS:")
+    for t in tools:
+        print(t.name)
 
     prompt = ChatPromptTemplate.from_messages(
         [
@@ -53,12 +58,12 @@ Rules:
     )
 
     return AgentExecutor(
-        agent=agent,
-        tools=tools,
-        verbose=False,
-        handle_parsing_errors=True,
-        max_iterations=5,
-    )
+    agent=agent,
+    tools=tools,
+    verbose=True,
+    max_iterations=2,
+    handle_parsing_errors=True,
+)
 
 @traceable(name="git_agent.response")
 async def get_git_agent_response(
@@ -81,5 +86,16 @@ async def get_git_agent_response(
             "No response generated."
         )
 
-    except Exception as e:
-        return f"Git Agent Error: {e}"
+
+    except Exception as error:
+        print("\n" + "=" * 80)
+        print("FULL GIT TRACEBACK")
+        print("=" * 80)
+
+        traceback.print_exc()
+
+        print("=" * 80 + "\n")
+
+        response = (
+            f"Git Agent Error: {type(error).__name__}: {error}"
+        )

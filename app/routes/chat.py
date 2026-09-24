@@ -70,13 +70,17 @@ async def chat_with_assistant(
 
         start_time = time.time()
 
+        print("START generate_chat_reply")
+
         reply = await asyncio.wait_for(
             generate_chat_reply(
                 text,
                 user_id=user_id,
             ),
-            timeout=30,
+            timeout=120,
         )
+
+        print("END generate_chat_reply")
 
         elapsed = time.time() - start_time
 
