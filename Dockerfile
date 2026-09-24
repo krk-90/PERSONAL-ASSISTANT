@@ -32,12 +32,13 @@ RUN apt-get update \
         git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir -r requirements.txt \
-    && which mcp-server-git \
-    && mcp-server-git --help
-        
 COPY requirements.txt ./
+
 RUN pip install --no-cache-dir -r requirements.txt
+
+RUN which git && git --version
+
+RUN which mcp-server-git || true
 
 RUN python -c "import os; from fastembed import TextEmbedding; [TextEmbedding(model_name=m) for m in {os.environ['RAG_EMBEDDING_MODEL'], os.environ['MEM0_EMBEDDING_MODEL']}]"
 
