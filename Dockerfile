@@ -27,7 +27,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y supervisor \
+    && apt-get install --no-install-recommends -y \
+        supervisor \
+        git \
+    && git --version \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./

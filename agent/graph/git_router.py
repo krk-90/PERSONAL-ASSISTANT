@@ -29,12 +29,22 @@ def is_github_url(value: str) -> bool:
 
 
 def clone_repo(repo_url: str) -> str:
+    git_exe = shutil.which("git")
+
+    print("GIT PATH:", git_exe)
+
+    if not git_exe:
+        raise RepoError(
+            "Git executable not found in container. "
+            "Install git in Dockerfile."
+        )
+
     temp_dir = tempfile.mkdtemp(prefix="repo_")
 
     try:
         subprocess.run(
             [
-                "git",
+                git_exe,
                 "clone",
                 "--depth",
                 "1",
@@ -47,6 +57,16 @@ def clone_repo(repo_url: str) -> str:
         )
 
         return temp_dir
+
+    except Exception as e:
+        shutil.rmtree(
+            temp_dir,
+            ignore_errors=True,
+        )
+
+        raise RepoError(
+            f"Failed to clone repository: {e}"
+        )
 
     except Exception as e:
         shutil.rmtree(temp_dir, ignore_errors=True)
