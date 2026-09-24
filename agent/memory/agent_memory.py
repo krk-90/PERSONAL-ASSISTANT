@@ -1,18 +1,28 @@
 import asyncio
 import os
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
-from mem0 import Memory
 from langsmith import traceable
+
+if TYPE_CHECKING:
+	from mem0 import Memory
 
 
 class LongTermMemory:
 	def __init__(self, user_id: str = "default-user"):
 		self.user_id = user_id
-		self._memory: Memory | None = None
+		self._memory: Any = None
 
-	def _get_memory(self) -> Memory:
+	@staticmethod
+	def _enabled() -> bool:
+		return os.getenv("MEM0_ENABLED", "true").strip().lower() in {
+			"1", "true", "yes", "on"
+		}
+
+	def _get_memory(self) -> Any:
 		if self._memory is None:
+			from mem0 import Memory
+
 			connection_string = os.getenv("SUPABASE_DB_URL")
 			if not connection_string:
 				raise RuntimeError("SUPABASE_DB_URL is required for long-term memory")
@@ -53,6 +63,9 @@ class LongTermMemory:
 
 	@traceable(name="memory.search")
 	async def search(self, query: str, limit: int = 5) -> list[str]:
+		if not self._enabled():
+			return []
+
 		try:
 			result = await asyncio.to_thread(
 				self._get_memory().search,
@@ -66,6 +79,9 @@ class LongTermMemory:
 
 	@traceable(name="memory.add")
 	async def add(self, user_message: str, assistant_message: str) -> bool:
+		if not self._enabled():
+			return False
+
 		try:
 			messages = [
 				{"role": "user", "content": user_message},
@@ -81,6 +97,9 @@ class LongTermMemory:
 			return False
 
 	async def clear(self) -> bool:
+		if not self._enabled():
+			return False
+
 		try:
 			await asyncio.to_thread(
 				self._get_memory().delete_all,

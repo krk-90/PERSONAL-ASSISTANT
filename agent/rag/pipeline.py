@@ -38,6 +38,9 @@ class RAGPipeline:
         use_supabase: bool,
         user_id: str | None = None,
     ):
+        if not chunks:
+            return LocalRetriever(chunks)
+
         resolved_user_id = user_id or os.getenv("TASK_USER_ID")
         configured = all(
             os.getenv(name)

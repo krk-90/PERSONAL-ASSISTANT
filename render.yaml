@@ -29,3 +29,5 @@ services:
         value: https://api.smith.langchain.com
       - key: CORS_ALLOWED_ORIGINS
         sync: false
+      - key: MEM0_ENABLED
+        value: "false"
