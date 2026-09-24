@@ -10,6 +10,7 @@ from uuid import uuid4
 
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+from langsmith import traceable
 from supabase import Client, create_client
 
 load_dotenv()
@@ -117,6 +118,7 @@ def _task_user_id() -> str:
 
 
 @mcp.tool()
+@traceable(name="mcp.add_task")
 def add_task(
     title: str,
     description: str = "",
@@ -161,6 +163,7 @@ def add_task(
 
 
 @mcp.tool()
+@traceable(name="mcp.get_tasks")
 def get_tasks(status: str | None = None, priority: str | None = None) -> list[dict[str, Any]]:
     """Return all tasks, optionally filtered by status or priority."""
     supabase = _get_supabase()
@@ -190,6 +193,7 @@ def get_tasks(status: str | None = None, priority: str | None = None) -> list[di
 
 
 @mcp.tool()
+@traceable(name="mcp.get_task")
 def get_task(task_id: str) -> dict[str, Any]:
     """Fetch a task by id."""
     supabase = _get_supabase()
@@ -212,6 +216,7 @@ def get_task(task_id: str) -> dict[str, Any]:
 
 
 @mcp.tool()
+@traceable(name="mcp.update_task")
 def update_task(
     task_id: str,
     title: str | None = None,
@@ -291,12 +296,14 @@ def update_task(
 
 
 @mcp.tool()
+@traceable(name="mcp.complete_task")
 def complete_task(task_id: str) -> dict[str, Any]:
     """Mark a task as completed."""
     return update_task(task_id, status="completed")
 
 
 @mcp.tool()
+@traceable(name="mcp.delete_task")
 def delete_task(task_id: str) -> bool:
     """Delete a task by id. Returns True if the task existed and was removed."""
     supabase = _get_supabase()

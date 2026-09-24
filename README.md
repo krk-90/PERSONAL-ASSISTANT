@@ -93,12 +93,20 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SUPABASE_DB_URL=postgresql://...
 GROQ_API_KEY=your-groq-key
 TASK_USER_ID=optional-server-fallback-user-uuid
+LANGSMITH_TRACING=false
+LANGSMITH_API_KEY=your-langsmith-api-key
+LANGSMITH_PROJECT=personal-assistant
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_DB_URL` are server-only secrets. Never expose them in frontend code or commit real values.
 
 `TASK_USER_ID` is optional and only used by standalone server-side scripts. Authenticated chat, task, and RAG flows use the Supabase user id from the bearer token automatically, so it does not need to be configured in Render.
+
+## LangSmith tracing
+
+LangChain model calls and application orchestration are traced when `LANGSMITH_TRACING=true`. Traces include the router, graph nodes, task and Git agents, RAG generation, long-term memory, and MCP task tools. User IDs are included as run metadata; API keys, passwords, and bearer tokens are not added to trace metadata.
 
 ## Supabase
 

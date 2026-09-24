@@ -3,6 +3,7 @@ import os
 from typing import Any
 
 from mem0 import Memory
+from langsmith import traceable
 
 
 class LongTermMemory:
@@ -50,6 +51,7 @@ class LongTermMemory:
 
 		return self._memory
 
+	@traceable(name="memory.search")
 	async def search(self, query: str, limit: int = 5) -> list[str]:
 		try:
 			result = await asyncio.to_thread(
@@ -62,6 +64,7 @@ class LongTermMemory:
 		except Exception:
 			return []
 
+	@traceable(name="memory.add")
 	async def add(self, user_message: str, assistant_message: str) -> bool:
 		try:
 			messages = [

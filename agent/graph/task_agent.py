@@ -7,6 +7,9 @@ if __package__ in {None, ""}:
 from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import StructuredTool
+from langsmith import traceable
+
+from app.core.tracing import trace_config
 
 from mcp_server.tools import (
 	add_task,
@@ -75,9 +78,21 @@ Rules:
 	)
 
 
-async def get_task_agent_response(agent: AgentExecutor, query: str) -> str:
+@traceable(name="task_agent.response")
+async def get_task_agent_response(
+    agent: AgentExecutor,
+    query: str,
+    user_id: str | None = None,
+) -> str:
 	try:
-		response = await agent.ainvoke({"input": query})
+		response = await agent.ainvoke(
+			{"input": query},
+			config=trace_config(
+				"task_agent.execution",
+				user_id=user_id,
+				tags=["agent", "task"],
+			),
+		)
 		return response.get("output", "No response generated.")
 	except Exception as error:
 		return f"Task Agent Error: {error}"

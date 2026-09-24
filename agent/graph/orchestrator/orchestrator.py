@@ -12,6 +12,8 @@ from agent.graph.git_agent import create_git_agent, get_git_agent_response
 from agent.graph.task_agent import create_task_agent, get_task_agent_response
 from agent.memory.agent_memory import LongTermMemory
 from agent.rag.pipeline import RAGPipeline
+from app.core.tracing import trace_config
+from langsmith import traceable
 
 
 class RouteDecision(BaseModel):
@@ -188,12 +190,14 @@ async def create_orchestrator(
     rag_pipeline = RAGPipeline.from_path(llm, rag_sources, user_id=user_id)
     long_term_memory = memory or LongTermMemory(user_id)
 
+    @traceable(name="orchestrator.load_memory")
     async def load_memory(state: OrchestratorState) -> dict:
         memories = await long_term_memory.search(state["query"])
         return {
             "memory_context": long_term_memory.format_context(memories)
         }
 
+    @traceable(name="orchestrator.route_request")
     async def route_request(state: OrchestratorState) -> dict:
         query = state["query"]
 
@@ -205,7 +209,14 @@ async def create_orchestrator(
             )
             return {"route": route}
 
-        decision = await router.ainvoke({"query": query})
+        decision = await router.ainvoke(
+            {"query": query},
+            config=trace_config(
+                "orchestrator.route_model",
+                user_id=user_id,
+                tags=["router"],
+            ),
+        )
 
         print(
             f"[ROUTER] llm route={decision.agent} "
@@ -214,6 +225,7 @@ async def create_orchestrator(
 
         return {"route": decision.agent}
 
+    @traceable(name="orchestrator.run_git_agent")
     async def run_git_agent(state: OrchestratorState) -> dict:
         nonlocal git_agent
 
@@ -232,6 +244,7 @@ async def create_orchestrator(
             response = await get_git_agent_response(
                 git_agent,
                 query,
+                user_id=user_id,
             )
 
         except Exception as error:
@@ -239,6 +252,7 @@ async def create_orchestrator(
 
         return {"response": response}
 
+    @traceable(name="orchestrator.run_task_agent")
     async def run_task_agent(state: OrchestratorState) -> dict:
         query = (
             state.get("memory_context", "")
@@ -248,10 +262,12 @@ async def create_orchestrator(
         response = await get_task_agent_response(
             task_agent,
             query,
+            user_id=user_id,
         )
 
         return {"response": response}
 
+    @traceable(name="orchestrator.run_rag_agent")
     async def run_rag_agent(state: OrchestratorState) -> dict:
         try:
             response = await rag_pipeline.ask(state["query"])
@@ -259,6 +275,7 @@ async def create_orchestrator(
             response = f"RAG Agent Error: {error}"
         return {"response": response}
 
+    @traceable(name="orchestrator.save_memory")
     async def save_memory(state: OrchestratorState) -> dict:
         await long_term_memory.add(
             state["query"],
@@ -299,9 +316,19 @@ async def create_orchestrator(
     return graph.compile()
 
 
-async def get_orchestrator_response(orchestrator, query: str) -> str:
+@traceable(name="orchestrator.response")
+async def get_orchestrator_response(
+    orchestrator,
+    query: str,
+    user_id: str | None = None,
+) -> str:
     result = await orchestrator.ainvoke(
-        {"query": query}
+        {"query": query},
+        config=trace_config(
+            "orchestrator.graph",
+            user_id=user_id,
+            tags=["orchestrator", "graph"],
+        ),
     )
 
     return result.get(

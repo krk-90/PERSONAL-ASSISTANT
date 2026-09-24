@@ -19,5 +19,13 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
+      - key: LANGSMITH_TRACING
+        value: "true"
+      - key: LANGSMITH_API_KEY
+        sync: false
+      - key: LANGSMITH_PROJECT
+        value: personal-assistant
+      - key: LANGSMITH_ENDPOINT
+        value: https://api.smith.langchain.com
       - key: CORS_ALLOWED_ORIGINS
         sync: false

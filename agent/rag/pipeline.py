@@ -4,7 +4,9 @@ import os
 from pathlib import Path
 
 from langchain_core.language_models.chat_models import BaseChatModel
+from langsmith import traceable
 
+from app.core.tracing import trace_config
 from agent.rag.generator.generation import generate_answer
 from agent.rag.loading import DocumentChunk, chunk_documents, load_documents
 from agent.rag.retriever.retrieval import (
@@ -23,6 +25,7 @@ class RAGPipeline:
         user_id: str | None = None,
     ):
         self.llm = llm
+        self.user_id = user_id
         self.retriever = self._create_retriever(chunks, use_supabase, user_id)
 
     @staticmethod
@@ -59,9 +62,15 @@ class RAGPipeline:
     def retrieve(self, question: str, limit: int = 4) -> list[RetrievedChunk]:
         return self.retriever.search(question, limit=limit)
 
+    @traceable(name="rag.pipeline.ask")
     async def ask(self, question: str, limit: int = 4) -> str:
         results = self.retrieve(question, limit=limit)
-        return await generate_answer(self.llm, question, results)
+        return await generate_answer(
+            self.llm,
+            question,
+            results,
+            user_id=self.user_id,
+        )
 
 
 __all__ = ["RAGPipeline"]

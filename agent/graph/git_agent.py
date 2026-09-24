@@ -1,6 +1,8 @@
 from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate
+from langsmith import traceable
 
+from app.core.tracing import trace_config
 from mcp_server.server.git_server import get_git_tools
 
 
@@ -58,15 +60,20 @@ Rules:
         max_iterations=5,
     )
 
+@traceable(name="git_agent.response")
 async def get_git_agent_response(
     agent: AgentExecutor,
-    query: str
+    query: str,
+    user_id: str | None = None,
 ) -> str:
     try:
         response = await agent.ainvoke(
-            {
-                "input": query
-            }
+            {"input": query},
+            config=trace_config(
+                "git_agent.execution",
+                user_id=user_id,
+                tags=["agent", "git"],
+            ),
         )
 
         return response.get(

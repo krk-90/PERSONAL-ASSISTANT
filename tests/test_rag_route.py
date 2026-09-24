@@ -2,8 +2,9 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from agent.rag.generator.generation import format_context
 from agent.rag.loading import DocumentChunk
-from agent.rag.retriever.retrieval import LocalRetriever
+from agent.rag.retriever.retrieval import LocalRetriever, RetrievedChunk
 from app.main import fastapi_app
 from app.routes.RAG import save_uploaded_documents
 
@@ -60,3 +61,15 @@ def test_local_retriever_matches_uploaded_filename():
     results = retriever.search("check resume")
 
     assert len(results) == 1
+
+
+def test_format_context_caps_long_retrieved_content():
+    results = [
+        RetrievedChunk(DocumentChunk("x" * 1000, "notes.txt", 0), 1.0),
+        RetrievedChunk(DocumentChunk("y" * 1000, "more.txt", 1), 0.9),
+    ]
+
+    context = format_context(results, max_chars=100)
+
+    assert len(context) <= 100
+    assert context.startswith("[1] Source: notes.txt\n")
