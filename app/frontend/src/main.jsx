@@ -21,6 +21,7 @@ function App() {
   const [password, setPassword] = React.useState("");
   const [message, setMessage] = React.useState("");
   const [messages, setMessages] = React.useState([]);
+  const [conversationId, setConversationId] = React.useState(() => localStorage.getItem("assistant_conversation") || "");
   const [files, setFiles] = React.useState([]);
   const [selectedFiles, setSelectedFiles] = React.useState([]);
   const [status, setStatus] = React.useState("Checking API");
@@ -34,6 +35,13 @@ function App() {
   React.useEffect(() => {
     if (!token) return;
     apiFetch("/rag/files", {}, token).then((data) => setFiles(data.files || [])).catch(() => setFiles([]));
+  }, [token]);
+
+  React.useEffect(() => {
+    if (!token || !conversationId) return;
+    apiFetch(`/chat/conversations/${conversationId}/messages`, {}, token)
+      .then((data) => setMessages((data.messages || []).map((m) => ({ role: m.role, text: m.content }))))
+      .catch(() => { localStorage.removeItem("assistant_conversation"); setConversationId(""); });
   }, [token]);
 
   async function authenticate(path) {
@@ -53,7 +61,11 @@ function App() {
     const text = message.trim(); setMessage(""); setError("");
     setMessages((current) => [...current, { role: "user", text }]); setBusy(true);
     try {
-      const data = await apiFetch("/chat/", { method: "POST", body: JSON.stringify({ message: text }) }, token);
+      const data = await apiFetch("/chat/", { method: "POST", body: JSON.stringify({ message: text, conversation_id: conversationId || null }) }, token);
+      if (data.conversation_id && data.conversation_id !== conversationId) {
+        localStorage.setItem("assistant_conversation", data.conversation_id);
+        setConversationId(data.conversation_id);
+      }
       setMessages((current) => [...current, { role: "assistant", text: data.reply }]);
     } catch (err) { setError(err.message); } finally { setBusy(false); }
   }
@@ -76,7 +88,7 @@ function App() {
     } catch (err) { setError(err.message); }
   }
 
-  function logout() { localStorage.removeItem("assistant_token"); setToken(""); setMessages([]); setFiles([]); }
+  function logout() { localStorage.removeItem("assistant_token"); localStorage.removeItem("assistant_conversation"); setConversationId(""); setToken(""); setMessages([]); setFiles([]); }
 
   return <div className="app-shell">
     <header className="topbar">

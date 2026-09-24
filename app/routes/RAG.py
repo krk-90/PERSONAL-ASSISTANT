@@ -1,10 +1,14 @@
+import asyncio
+import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from app.core.security import bearer_scheme, get_authenticated_user_id
+from agent.rag.indexer import delete_user_source, index_user_files
 from app.services.chat_services import invalidate_orchestrator_cache
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/rag", tags=["rag"])
 
 
@@ -76,9 +80,20 @@ async def upload_documents(
 
     invalidate_orchestrator_cache(user_id)
 
+    indexed_chunks, index_error = 0, None
+    try:
+        indexed_chunks = await asyncio.to_thread(
+            index_user_files, user_id, [item["path"] for item in saved]
+        )
+    except Exception as exc:
+        logger.exception("RAG indexing failed for user %s", user_id)
+        index_error = str(exc)
+
     return {
         "message": "Files uploaded successfully",
         "files": saved,
+        "indexed_chunks": indexed_chunks,
+        "index_error": index_error,
     }
 
 
@@ -106,4 +121,9 @@ async def delete_uploaded_document(filename: str, credentials=Depends(bearer_sch
         raise HTTPException(status_code=404, detail="File not found")
 
     destination.unlink()
+    invalidate_orchestrator_cache(user_id)
+    try:
+        await asyncio.to_thread(delete_user_source, user_id, str(destination.resolve()))
+    except Exception:
+        logger.exception("Failed to remove rag_documents rows for %s", filename)
     return {"message": "File deleted successfully", "filename": filename}

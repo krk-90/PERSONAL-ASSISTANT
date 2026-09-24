@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 import os
 import re
@@ -9,6 +10,8 @@ from hashlib import sha256
 
 from agent.rag.loading import DocumentChunk
 
+
+logger = logging.getLogger(__name__)
 
 TOKEN_PATTERN = re.compile(r"[a-zA-Z0-9_]{2,}")
 STOP_WORDS = {"the", "and", "for", "with", "that", "this", "from", "are", "was"}
@@ -78,7 +81,7 @@ class SupabaseRetriever:
 		self.index(chunks)
 
 	def _embedding(self, text: str) -> list[float]:
-		return list(next(iter(self.embedder.embed([text]))))
+		return [float(x) for x in next(iter(self.embedder.embed([text])))]
 
 	def _chunk_embedding(self, chunk: DocumentChunk) -> list[float]:
 		return self._embedding(f"{chunk.source}\n{chunk.text}")
@@ -101,7 +104,12 @@ class SupabaseRetriever:
 			}
 			for chunk in chunks
 		]
-		self.client.table("rag_documents").upsert(rows).execute()
+		for start in range(0, len(rows), 50):
+			self.client.table("rag_documents").upsert(rows[start : start + 50]).execute()
+		logger.info("Indexed %d chunks into rag_documents for user %s", len(rows), self.user_id)
+
+	def delete_source(self, source: str) -> None:
+		self.client.table("rag_documents").delete().eq("user_id", self.user_id).eq("source", source).execute()
 
 	def search(self, query: str, limit: int = 4) -> list[RetrievedChunk]:
 		if limit <= 0:

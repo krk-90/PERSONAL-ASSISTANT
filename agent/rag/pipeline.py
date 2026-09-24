@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 
@@ -14,6 +15,9 @@ from agent.rag.retriever.retrieval import (
     RetrievedChunk,
     SupabaseRetriever,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class RAGPipeline:
@@ -43,7 +47,9 @@ class RAGPipeline:
             try:
                 return SupabaseRetriever(chunks, user_id=resolved_user_id)
             except Exception:
-                pass
+                logger.exception("SupabaseRetriever failed; falling back to in-memory LocalRetriever")
+        elif use_supabase:
+            logger.warning("Supabase RAG not configured (SUPABASE_URL/SERVICE_ROLE_KEY/user_id); using LocalRetriever")
         return LocalRetriever(chunks)
 
     @classmethod

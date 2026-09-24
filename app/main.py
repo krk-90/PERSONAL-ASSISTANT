@@ -2,6 +2,7 @@ import asyncio
 import os
 import time
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -9,6 +10,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 
 from app.routes.RAG import router as rag_router
 from app.routes.auth import router as auth_router
@@ -16,7 +21,16 @@ from app.routes.chat import router as chat_router
 from app.routes.health import router as health_router
 from app.services.chat_services import warm_start_cache
 
-fastapi_app = FastAPI(title="Personal Assistant API")
+limiter = Limiter(key_func=get_remote_address, default_limits=["15/minute"])
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    asyncio.create_task(warm_start_cache())
+    yield
+
+
+fastapi_app = FastAPI(title="Personal Assistant API", lifespan=lifespan)
 FRONTEND_DIR = Path(__file__).resolve().parent / "frontend"
 FRONTEND_DIST_DIR = FRONTEND_DIR / "dist"
 INDEX_FILE = FRONTEND_DIST_DIR / "index.html"
@@ -33,6 +47,8 @@ def _allowed_origins() -> list[str]:
 
 allowed_origins = _allowed_origins()
 allow_all_origins = "*" in allowed_origins
+fastapi_app.state.limiter = limiter
+fastapi_app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"] if allow_all_origins else allowed_origins,
@@ -41,6 +57,7 @@ fastapi_app.add_middleware(
     allow_headers=["*"],
     expose_headers=["X-Request-ID", "X-Process-Time"],
 )
+fastapi_app.add_middleware(SlowAPIMiddleware)
 
 
 @fastapi_app.middleware("http")
@@ -90,15 +107,6 @@ def custom_openapi():
 
 
 fastapi_app.openapi = custom_openapi
-
-
-@fastapi_app.on_event("startup")
-async def startup_event() -> None:
-    def warm_cache_in_worker() -> None:
-        asyncio.run(warm_start_cache())
-
-    asyncio.create_task(asyncio.to_thread(warm_cache_in_worker))
-
 
 @fastapi_app.get("/", include_in_schema=False)
 def frontend_index():

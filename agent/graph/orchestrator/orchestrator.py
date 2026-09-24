@@ -183,7 +183,9 @@ async def create_orchestrator(
     router = ROUTER_PROMPT | llm.with_structured_output(RouteDecision)
 
     git_agent = None
-    rag_sources = [repo_path]
+    rag_sources = []
+    if os.getenv("RAG_INDEX_REPO", "false").lower() == "true":
+        rag_sources.append(repo_path)
     upload_dir = Path(repo_path).resolve() / "data" / "uploads" / user_id
     if upload_dir.exists():
         rag_sources.append(str(upload_dir))
