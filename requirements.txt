@@ -22,3 +22,4 @@ langchain-text-splitters>=0.3.0
 langchain-google-genai>=2.0.0
 langsmith>=0.1.147
 pypdf>=5.0.0
+mcp-server-git>=2026.8.18

@@ -141,6 +141,11 @@ async def run_git_query(
 
         return result
 
+    except Exception as e:
+        print("FULL ERROR:", repr(e))
+        raise
+
+
     finally:
         if cloned and local_repo:
             print("[GIT] Cleaning temporary repo")

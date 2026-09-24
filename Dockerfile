@@ -30,9 +30,12 @@ RUN apt-get update \
     && apt-get install --no-install-recommends -y \
         supervisor \
         git \
-    && git --version \
     && rm -rf /var/lib/apt/lists/*
 
+RUN pip install --no-cache-dir -r requirements.txt \
+    && which mcp-server-git \
+    && mcp-server-git --help
+        
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
