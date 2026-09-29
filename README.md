@@ -4,6 +4,17 @@ A multi-agent AI personal assistant built with **FastAPI**, **LangGraph**, and *
 
 ~ WORKING URL : https://personal-assistant-4ogi.onrender.com
 
+## Engineering Highlights
+
+- **Multi-agent orchestration:** LangGraph routes requests to specialized Task, Git and RAG capabilities.
+- **Hybrid routing:** deterministic keyword/phrase routing handles obvious requests first, with an LLM router for ambiguous requests.
+- **MCP tool integration:** task operations and Git workflows are exposed through Model Context Protocol tools.
+- **Production data isolation:** Supabase Auth, PostgreSQL and Row Level Security keep user data scoped to the authenticated user.
+- **RAG + memory:** pgvector-backed document retrieval combined with Mem0 long-term memory.
+- **Reliability:** Groq model fallback, request IDs, latency headers, rate limiting and graceful error handling.
+- **Observability:** LangSmith tracing across routing, agents, RAG, memory and MCP tools.
+- **Deployment:** Dockerized FastAPI application with a Render deployment configuration.
+
 ## Features
 
 - **Task management agent**: create, list, update, complete, and delete tasks by chatting. Tools are exposed through an MCP server backed by Supabase.
