@@ -1,0 +1,148 @@
+{
+  "summary": {
+    "hit_rate@5": 0.375,
+    "recall@5": 0.3125,
+    "precision@5": 0.07500000000000001,
+    "mrr": 0.375,
+    "latency_p50_ms": 0.07,
+    "latency_p95_ms": 0.12250000000000001
+  },
+  "cases": [
+    {
+      "id": "C1",
+      "question": "Where is the repository Q&A pipeline implemented?",
+      "retrieved": [],
+      "retrieved_sources": [
+        "orchestrator.py",
+        "tools.py",
+        "tools.py",
+        "git_router.py",
+        "presistence.py"
+      ],
+      "relevant": [
+        "clocket_ai_qa.py",
+        "pipeline.py"
+      ],
+      "latency_ms": 0.14
+    },
+    {
+      "id": "C2",
+      "question": "How are repository documents loaded and chunked?",
+      "retrieved": [
+        "loading.py"
+      ],
+      "retrieved_sources": [
+        "orchestrator.py",
+        "loading.py",
+        "git_router.py",
+        "git_agent.py",
+        "exce_main.py"
+      ],
+      "relevant": [
+        "loading.py"
+      ],
+      "latency_ms": 0.07
+    },
+    {
+      "id": "C3",
+      "question": "How does the local retriever rank chunks?",
+      "retrieved": [
+        "retrieval.py"
+      ],
+      "retrieved_sources": [
+        "pipeline.py",
+        "retrieval.py",
+        "indexer.py",
+        "loading.py",
+        "generation.py"
+      ],
+      "relevant": [
+        "retrieval.py"
+      ],
+      "latency_ms": 0.06
+    },
+    {
+      "id": "C4",
+      "question": "How is repository architecture analyzed?",
+      "retrieved": [],
+      "retrieved_sources": [
+        "tools.py",
+        "tools.py",
+        "orchestrator.py",
+        "git_router.py",
+        "presistence.py"
+      ],
+      "relevant": [
+        "architecture.py"
+      ],
+      "latency_ms": 0.07
+    },
+    {
+      "id": "C5",
+      "question": "How does the repository scanner discover files?",
+      "retrieved": [],
+      "retrieved_sources": [
+        "rag.py",
+        "orchestrator.py",
+        "git_router.py",
+        "git_agent.py",
+        "exce_main.py"
+      ],
+      "relevant": [
+        "scanner.py"
+      ],
+      "latency_ms": 0.06
+    },
+    {
+      "id": "C6",
+      "question": "How are starter tasks generated?",
+      "retrieved": [],
+      "retrieved_sources": [
+        "tools.py",
+        "orchestrator.py",
+        "task_agent.py",
+        "git_agent.py"
+      ],
+      "relevant": [
+        "task_generator.py"
+      ],
+      "latency_ms": 0.05
+    },
+    {
+      "id": "C7",
+      "question": "How are repository chunks stored and retrieved for users?",
+      "retrieved": [
+        "retrieval.py"
+      ],
+      "retrieved_sources": [
+        "retrieval.py",
+        "pipeline.py",
+        "orchestrator.py",
+        "indexer.py",
+        "loading.py"
+      ],
+      "relevant": [
+        "clocket_ai_qa.py",
+        "retrieval.py"
+      ],
+      "latency_ms": 0.09
+    },
+    {
+      "id": "C8",
+      "question": "How does the application prevent cross-repository data leakage?",
+      "retrieved": [],
+      "retrieved_sources": [
+        "orchestrator.py",
+        "tools.py",
+        "git_router.py",
+        "presistence.py",
+        "git_agent.py"
+      ],
+      "relevant": [
+        "clocket_ai_qa.py",
+        "retrieval.py"
+      ],
+      "latency_ms": 0.07
+    }
+  ]
+}
